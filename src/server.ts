@@ -1,6 +1,7 @@
 import express from "express";
 import dotenv from "dotenv";
 import leadsRouter from "./routes/leads";
+import { startScoreLeadsJob } from "./jobs/scoreLeadsJob";
 
 dotenv.config();
 
@@ -14,6 +15,9 @@ app.get("/health", (_req, res) => {
   res.json({ status: "ok" });
 });
 
-app.listen(3001, () => {
-  console.log("Server running on port 3001");
+const port = process.env.PORT || 3001;
+
+app.listen(port, () => {
+  console.log(`Server running on port ${port}`);
+  startScoreLeadsJob();
 });
