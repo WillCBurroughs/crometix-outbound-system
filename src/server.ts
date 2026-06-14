@@ -1,6 +1,7 @@
 import express from "express";
 import dotenv from "dotenv";
 import leadsRouter from "./routes/leads";
+import apolloRouter from "./routes/apollo";
 import { startScoreLeadsJob } from "./jobs/scoreLeadsJob";
 
 dotenv.config();
@@ -10,6 +11,7 @@ const app = express();
 app.use(express.json());
 
 app.use("/leads", leadsRouter);
+app.use("/apollo", apolloRouter);
 
 app.get("/health", (_req, res) => {
   res.json({ status: "ok" });
