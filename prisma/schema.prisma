@@ -29,3 +29,20 @@ model Lead {
   createdAt     DateTime @default(now())
   updatedAt     DateTime @updatedAt
 }
+
+model Competitor {
+  id              String @id @default(uuid())
+
+  leadId          String
+  lead            Lead   @relation(fields: [leadId], references: [id])
+
+  name            String
+  websiteUrl      String
+
+  performance     Int?
+  seo             Int?
+  accessibility   Int?
+  bestPractices   Int?
+
+  createdAt       DateTime @default(now())
+}
