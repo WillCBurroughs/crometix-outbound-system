@@ -4,6 +4,7 @@ import csv from "csv-parser";
 import fs from "fs";
 import { prisma } from "../lib/prisma";
 import { generateComparisons } from "../jobs/generateComparisonsJob";
+import { generateReportUrls } from "../jobs/generateReportUrlsJob";
 
 const router = express.Router();
 const upload = multer({ dest: "uploads/" });
@@ -18,6 +19,15 @@ router.get("/", async (req, res) => {
   });
 
   res.json(leads);
+});
+
+router.post("/generate-report-urls", async (_req, res) => {
+  try {
+    const result = await generateReportUrls();
+    res.json(result);
+  } catch (error: any) {
+    res.status(500).json({ error: error.message });
+  }
 });
 
 router.post("/import", upload.single("file"), async (req, res) => {
@@ -72,6 +82,21 @@ router.post("/import", upload.single("file"), async (req, res) => {
 
       res.json({ imported });
     });
+});
+
+router.get("/:id/with-competitors", async (req, res) => {
+  const lead = await prisma.lead.findUnique({
+    where: { id: req.params.id },
+    include: {
+      competitors: true,
+    },
+  });
+
+  if (!lead) {
+    return res.status(404).json({ error: "Lead not found" });
+  }
+
+  res.json(lead);
 });
 
 router.post("/generate-comparisons", async (_req, res) => {
