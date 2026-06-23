@@ -15,27 +15,28 @@ function normalizeName(name: string | null | undefined) {
     .replace(/[^a-z0-9]/g, "");
 }
 
-export async function findCompetitors(lead: {
+function normalizeWebsiteUrl(url: string) {
+  return /^https?:\/\//i.test(url) ? url : `https://${url}`;
+}
+
+function extractCompetitors(data: any, lead: {
   companyName: string | null;
   websiteUrl: string | null;
-  city: string | null;
-  state: string | null;
 }) {
-  const data = await searchApolloCompaniesForCompetitors(lead);
-
   const companies = data.organizations || data.accounts || [];
 
   const leadName = normalizeName(lead.companyName);
   const leadUrl = normalizeUrl(lead.websiteUrl);
 
-  const competitors = companies
+  return companies
     .filter((company: any) => {
       const companyName = normalizeName(company.name);
-      const companyUrl = normalizeUrl(
+      const rawUrl =
         company.website_url ||
         company.primary_domain ||
-        company.domain
-      );
+        company.domain;
+
+      const companyUrl = normalizeUrl(rawUrl);
 
       if (!companyName || !companyUrl) return false;
       if (companyName === leadName) return false;
@@ -47,9 +48,9 @@ export async function findCompetitors(lead: {
         company.short_description,
         company.industry,
         ...(company.keywords || []),
-        ].join(" ").toLowerCase();
+      ].join(" ").toLowerCase();
 
-        const badTerms = [
+      const badTerms = [
         "association",
         "supply",
         "supplier",
@@ -60,9 +61,9 @@ export async function findCompetitors(lead: {
         "vc",
         "venture",
         "investment",
-        ];
+      ];
 
-        const goodTerms = [
+      const goodTerms = [
         "medical spa",
         "med spa",
         "medspa",
@@ -71,32 +72,43 @@ export async function findCompetitors(lead: {
         "botox",
         "skin",
         "laser",
-        ];
+      ];
 
-        const hasBadTerm = badTerms.some(term => rawText.includes(term));
-        const hasGoodTerm = goodTerms.some(term => rawText.includes(term));
-
-        if (hasBadTerm) return false;
-        if (!hasGoodTerm) return false;
+      if (badTerms.some(term => rawText.includes(term))) return false;
+      if (!goodTerms.some(term => rawText.includes(term))) return false;
 
       return true;
     })
-    .slice(0, 2)
     .map((company: any) => {
       const rawUrl =
         company.website_url ||
         company.primary_domain ||
         company.domain;
 
-      const websiteUrl = /^https?:\/\//i.test(rawUrl)
-        ? rawUrl
-        : `https://${rawUrl}`;
-
       return {
         name: company.name,
-        websiteUrl,
+        websiteUrl: normalizeWebsiteUrl(rawUrl),
       };
     });
+}
 
-  return competitors;
+export async function findCompetitors(lead: {
+  companyName: string | null;
+  websiteUrl: string | null;
+  city: string | null;
+  state: string | null;
+}) {
+  const cityData = await searchApolloCompaniesForCompetitors(lead);
+  let competitors = extractCompetitors(cityData, lead);
+
+  if (competitors.length < 1 && lead.state) {
+    const stateData = await searchApolloCompaniesForCompetitors({
+      ...lead,
+      city: null,
+    });
+
+    competitors = extractCompetitors(stateData, lead);
+  }
+
+  return competitors.slice(0, 2);
 }

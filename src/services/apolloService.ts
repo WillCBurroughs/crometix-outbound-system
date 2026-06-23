@@ -49,9 +49,13 @@ export async function searchApolloCompaniesForCompetitors(lead: {
     throw new Error("APOLLO_API_KEY is missing");
   }
 
-  if (!lead.city || !lead.state) {
-    throw new Error("Lead city/state missing");
+  if (!lead.state) {
+    throw new Error("Lead state missing");
   }
+
+  const location = lead.city
+    ? `${lead.city}, ${lead.state}`
+    : lead.state;
 
   const response = await axios.post(
     `${APOLLO_BASE_URL}/mixed_companies/search`,
@@ -65,13 +69,8 @@ export async function searchApolloCompaniesForCompetitors(lead: {
       params: {
         page: 1,
         per_page: 25,
-
-        "organization_locations[]": [
-          `${lead.city}, ${lead.state}`,
-        ],
-
+        "organization_locations[]": [location],
         "organization_num_employees_ranges[]": ["1,50"],
-
         "q_organization_keyword_tags[]": [
           "medical spa",
           "med spa",

@@ -3,6 +3,7 @@ import multer from "multer";
 import csv from "csv-parser";
 import fs from "fs";
 import { prisma } from "../lib/prisma";
+import { generateComparisons } from "../jobs/generateComparisonsJob";
 
 const router = express.Router();
 const upload = multer({ dest: "uploads/" });
@@ -71,6 +72,17 @@ router.post("/import", upload.single("file"), async (req, res) => {
 
       res.json({ imported });
     });
+});
+
+router.post("/generate-comparisons", async (_req, res) => {
+  try {
+    const result = await generateComparisons();
+    res.json(result);
+  } catch (error: any) {
+    res.status(500).json({
+      error: error.message,
+    });
+  }
 });
 
 export default router;
