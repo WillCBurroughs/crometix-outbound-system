@@ -68,7 +68,7 @@ export async function searchApolloCompaniesForCompetitors(lead: {
       },
       params: {
         page: 1,
-        per_page: 25,
+        per_page: 50,
         "organization_locations[]": [location],
         "organization_num_employees_ranges[]": ["1,50"],
         "q_organization_keyword_tags[]": [
