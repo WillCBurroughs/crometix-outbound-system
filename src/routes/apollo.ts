@@ -2,6 +2,8 @@ import express from "express";
 import { searchApolloPeople } from "../services/apolloService";
 import { enrichPerson } from "../services/apolloEnrichmentService";
 import { importApolloLeads } from "../jobs/importApolloLeadsJob";
+import { findCompetitors } from "../services/competitorService";
+import { prisma } from "../lib/prisma";
 
 const router = express.Router();
 
@@ -60,6 +62,42 @@ router.get("/stats", async (_req, res) => {
     withEmail: withEmail.length,
     sampleTitles: [...new Set(data.people.map((p:any) => p.title))].slice(0,20)
     });
+});
+
+router.get("/competitor-test", async (_req, res) => {
+  try {
+    const lead = await prisma.lead.findFirst({
+      where: {
+        status: "REPORT_PENDING",
+        NOT: {
+          apolloId: {
+            startsWith: "test",
+          },
+        },
+      },
+    });
+
+    if (!lead) {
+      return res.status(404).json({ error: "No REPORT_PENDING lead found" });
+    }
+
+    const competitors = await findCompetitors(lead);
+
+    res.json({
+      lead: {
+        companyName: lead.companyName,
+        websiteUrl: lead.websiteUrl,
+        city: lead.city,
+        state: lead.state,
+      },
+      competitors,
+    });
+  } catch (error: any) {
+    res.status(500).json({
+      error: error.message,
+      details: error.response?.data,
+    });
+  }
 });
 
 export default router;

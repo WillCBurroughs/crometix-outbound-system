@@ -36,3 +36,52 @@ export async function searchApolloPeople() {
 
   return response.data;
 }
+
+export async function searchApolloCompaniesForCompetitors(lead: {
+  companyName: string | null;
+  websiteUrl: string | null;
+  city: string | null;
+  state: string | null;
+}) {
+  const apiKey = process.env.APOLLO_API_KEY;
+
+  if (!apiKey) {
+    throw new Error("APOLLO_API_KEY is missing");
+  }
+
+  if (!lead.city || !lead.state) {
+    throw new Error("Lead city/state missing");
+  }
+
+  const response = await axios.post(
+    `${APOLLO_BASE_URL}/mixed_companies/search`,
+    null,
+    {
+      headers: {
+        "Content-Type": "application/json",
+        "Cache-Control": "no-cache",
+        "X-Api-Key": apiKey,
+      },
+      params: {
+        page: 1,
+        per_page: 25,
+
+        "organization_locations[]": [
+          `${lead.city}, ${lead.state}`,
+        ],
+
+        "organization_num_employees_ranges[]": ["1,50"],
+
+        "q_organization_keyword_tags[]": [
+          "medical spa",
+          "med spa",
+          "medical aesthetics",
+          "aesthetics",
+          "botox",
+        ],
+      },
+    }
+  );
+
+  return response.data;
+}
