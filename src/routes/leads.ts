@@ -5,6 +5,7 @@ import fs from "fs";
 import { prisma } from "../lib/prisma";
 import { generateComparisons } from "../jobs/generateComparisonsJob";
 import { generateReportUrls } from "../jobs/generateReportUrlsJob";
+import { generatePdfReports } from "../jobs/generatePdfReportsJob";
 
 const router = express.Router();
 const upload = multer({ dest: "uploads/" });
@@ -19,6 +20,15 @@ router.get("/", async (req, res) => {
   });
 
   res.json(leads);
+});
+
+router.post("/generate-pdf-reports", async (_req, res) => {
+  try {
+    const result = await generatePdfReports();
+    res.json(result);
+  } catch (error: any) {
+    res.status(500).json({ error: error.message });
+  }
 });
 
 router.post("/generate-report-urls", async (_req, res) => {
