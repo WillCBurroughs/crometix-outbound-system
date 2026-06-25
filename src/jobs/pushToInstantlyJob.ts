@@ -17,7 +17,10 @@ export async function pushReportReadyLeadsToInstantly() {
         },
       },
     },
-    take: 10,
+    take: 1,
+    include: {
+      competitors: true,
+    },
   });
 
   let attempted = leads.length;
@@ -26,6 +29,16 @@ export async function pushReportReadyLeadsToInstantly() {
 
   for (const lead of leads) {
     try {
+      const competitor1 = lead.competitors[0]?.name || "";
+      const competitor2 = lead.competitors[1]?.name || "";
+
+      const comparisonSummary =
+        competitor1 && competitor2
+          ? `${competitor1} and ${competitor2}`
+          : competitor1
+            ? competitor1
+            : "nearby competitors";
+
       const result = await addLeadToInstantlyCampaign({
         email: lead.email!,
         firstName: lead.firstName,
@@ -33,6 +46,12 @@ export async function pushReportReadyLeadsToInstantly() {
         companyName: lead.companyName,
         websiteUrl: lead.websiteUrl,
         reportUrl: lead.reportUrl,
+        competitor1,
+        competitor2,
+        comparisonSummary,
+        performanceScore: lead.performance,
+        city: lead.city,
+        state: lead.state,
       });
 
       await prisma.lead.update({

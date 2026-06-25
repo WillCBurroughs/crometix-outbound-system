@@ -9,6 +9,12 @@ type InstantlyLeadInput = {
   companyName?: string | null;
   websiteUrl?: string | null;
   reportUrl?: string | null;
+  competitor1?: string | null;
+  competitor2?: string | null;
+  comparisonSummary?: string | null;
+  performanceScore?: number | null;
+  city?: string | null;
+  state?: string | null;
 };
 
 export async function addLeadToInstantlyCampaign(lead: InstantlyLeadInput) {
@@ -32,6 +38,16 @@ export async function addLeadToInstantlyCampaign(lead: InstantlyLeadInput) {
           website: lead.websiteUrl || "",
           custom_variables: {
             report_url: lead.reportUrl || "",
+            competitor_1: lead.competitor1 || "",
+            competitor_2: lead.competitor2 || "",
+            comparison_summary: lead.comparisonSummary || "",
+            performance_score:
+              lead.performanceScore !== null &&
+              lead.performanceScore !== undefined
+                ? String(lead.performanceScore)
+                : "",
+            city: lead.city || "",
+            state: lead.state || "",
           },
         },
       ],
@@ -41,7 +57,7 @@ export async function addLeadToInstantlyCampaign(lead: InstantlyLeadInput) {
         Authorization: `Bearer ${apiKey}`,
         "Content-Type": "application/json",
       },
-    }
+    },
   );
 
   return response.data;

@@ -8,6 +8,7 @@ import express from "express";
 import multer from "multer";
 import fs from "fs";
 import csv from "csv-parser";
+import { pushReportReadyLeadsToInstantly } from "../jobs/pushToInstantlyJob.js";
 
 const router = express.Router();
 const upload = multer({ dest: "uploads/" });
@@ -27,6 +28,15 @@ router.get("/", async (req, res) => {
 router.post("/generate-pdf-reports", async (_req, res) => {
   try {
     const result = await generatePdfReports();
+    res.json(result);
+  } catch (error: any) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
+router.post("/push-to-instantly", async (_req, res) => {
+  try {
+    const result = await pushReportReadyLeadsToInstantly();
     res.json(result);
   } catch (error: any) {
     res.status(500).json({ error: error.message });
