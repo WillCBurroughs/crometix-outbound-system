@@ -120,4 +120,40 @@ router.post("/generate-comparisons", async (_req, res) => {
   }
 });
 
+router.post("/refresh-report-urls", async (_req, res) => {
+  try {
+    const frontendBaseUrl =
+      process.env.FRONTEND_BASE_URL || "http://localhost:3002";
+
+    const leads = await prisma.lead.findMany({
+      where: {
+        status: {
+          in: ["REPORT_READY", "PDF_READY"],
+        },
+      },
+    });
+
+    let updated = 0;
+
+    for (const lead of leads) {
+      await prisma.lead.update({
+        where: { id: lead.id },
+        data: {
+          reportUrl: `${frontendBaseUrl}/report/${lead.id}`,
+          status: "REPORT_READY",
+        },
+      });
+
+      updated++;
+    }
+
+    res.json({
+      attempted: leads.length,
+      updated,
+    });
+  } catch (error: any) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
 export default router;
