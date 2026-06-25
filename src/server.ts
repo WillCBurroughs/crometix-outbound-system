@@ -1,10 +1,11 @@
 import express from "express";
+import cors from "cors";
 import dotenv from "dotenv";
-import leadsRouter from "./routes/leads";
-import apolloRouter from "./routes/apollo";
-import { startScoreLeadsJob } from "./jobs/scoreLeadsJob";
-import reportsRouter from "./routes/reports";
 
+import leadsRouter from "./routes/leads.js";
+import apolloRouter from "./routes/apollo.js";
+import { scoreLeads } from "./jobs/scoreLeadsJob.js";
+import reportsRouter from "./routes/reports.js";
 dotenv.config();
 
 const app = express();

@@ -1,11 +1,9 @@
-import express from "express";
-import multer from "multer";
-import csv from "csv-parser";
-import fs from "fs";
-import { prisma } from "../lib/prisma";
-import { generateComparisons } from "../jobs/generateComparisonsJob";
-import { generateReportUrls } from "../jobs/generateReportUrlsJob";
-import { generatePdfReports } from "../jobs/generatePdfReportsJob";
+import { prisma } from "../lib/prisma.js";
+import { scoreLeads } from "../jobs/scoreLeadsJob.js";
+import { importApolloLeads } from "../jobs/importApolloLeadsJob.js";
+import { generateComparisons } from "../jobs/generateComparisonsJob.js";
+import { generateReportUrls } from "../jobs/generateReportUrlsJob.js";
+import { generatePdfReports } from "../jobs/generatePdfReportsJob.js";
 
 const router = express.Router();
 const upload = multer({ dest: "uploads/" });
