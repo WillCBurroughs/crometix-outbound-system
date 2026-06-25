@@ -1,4 +1,4 @@
-import { searchApolloCompaniesForCompetitors } from "./apolloService";
+import { searchApolloCompaniesForCompetitors } from "./apolloService.js";
 
 function normalizeUrl(url: string | null | undefined) {
   if (!url) return "";

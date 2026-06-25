@@ -1,6 +1,6 @@
-import { prisma } from "../lib/prisma";
-import { searchApolloPeople } from "../services/apolloService";
-import { enrichPerson } from "../services/apolloEnrichmentService";
+import { prisma } from "../lib/prisma.js";
+import { searchApolloPeople } from "../services/apolloService.js";
+import { enrichPerson } from "../services/apolloEnrichmentService.js";
 
 export async function importApolloLeads() {
   const data = await searchApolloPeople();

@@ -1,5 +1,5 @@
-import { prisma } from "../lib/prisma";
-import { generatePdfReport } from "../services/pdfReportService";
+import { prisma } from "../lib/prisma.js";
+import { generatePdfReport } from "../services/pdfReportService.js";
 
 export async function generatePdfReports() {
   const leads = await prisma.lead.findMany({

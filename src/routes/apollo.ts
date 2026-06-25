@@ -1,9 +1,9 @@
 import express from "express";
-import { searchApolloPeople } from "../services/apolloService";
-import { enrichPerson } from "../services/apolloEnrichmentService";
-import { importApolloLeads } from "../jobs/importApolloLeadsJob";
-import { findCompetitors } from "../services/competitorService";
-import { prisma } from "../lib/prisma";
+import { searchApolloPeople } from "../services/apolloService.js";
+import { enrichPerson } from "../services/apolloEnrichmentService.js";
+import { importApolloLeads } from "../jobs/importApolloLeadsJob.js";
+import { findCompetitors } from "../services/competitorService.js";
+import { prisma } from "../lib/prisma.js";
 
 
 const router = express.Router();

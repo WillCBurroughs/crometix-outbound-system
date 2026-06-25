@@ -1,8 +1,8 @@
 import cron from "node-cron";
-import { prisma } from "../lib/prisma";
-import { auditWebsite } from "../services/auditService";
+import { prisma } from "../lib/prisma.js";
+import { auditWebsite } from "../services/auditService.js";
 
-export function startScoreLeadsJob() {
+export function scoreLeads() {
   cron.schedule("*/2 * * * *", async () => {
     console.log("Running score leads job...");
 

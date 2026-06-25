@@ -1,6 +1,6 @@
-import { prisma } from "../lib/prisma";
-import { auditWebsite } from "../services/auditService";
-import { findCompetitors } from "../services/competitorService";
+import { prisma } from "../lib/prisma.js";
+import { auditWebsite } from "../services/auditService.js";
+import { findCompetitors } from "../services/competitorService.js";
 
 export async function generateComparisons() {
   const leads = await prisma.lead.findMany({
