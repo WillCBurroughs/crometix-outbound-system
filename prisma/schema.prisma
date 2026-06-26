@@ -7,43 +7,138 @@ datasource db {
 }
 
 model Lead {
-  id            String   @id @default(uuid())
-  apolloId      String?  @unique
-  firstName     String?
-  lastName      String?
-  email         String?
-  companyName   String?
-  websiteUrl    String?
-  city          String?
-  state         String?
-  linkedinUrl   String?
-  websiteScore  Int?
-  performance   Int?
-  seo           Int?
-  competitors Competitor[]
-  accessibility Int?
-  bestPractices Int?
-  status        String   @default("NEW")
-  errorMessage  String?
-  reportUrl     String?
-  instantlyId   String?
-  createdAt     DateTime @default(now())
-  updatedAt     DateTime @updatedAt
+  id                  String               @id @default(uuid())
+  apolloId            String?              @unique
+  firstName           String?
+  lastName            String?
+  email               String?
+  companyName         String?
+  websiteUrl          String?
+  city                String?
+  state               String?
+  linkedinUrl         String?
+  websiteScore        Int?
+  performance         Int?
+  seo                 Int?
+  competitors         Competitor[]
+  accessibility       Int?
+  bestPractices       Int?
+  status              String               @default("NEW")
+  errorMessage        String?
+  reportUrl           String?
+  instantlyId         String?
+  createdAt           DateTime             @default(now())
+  updatedAt           DateTime             @updatedAt
+  campaignEnrollments CampaignEnrollment[]
+  campaignEvents      CampaignEvent[]
 }
 
 model Competitor {
-  id              String @id @default(uuid())
+  id String @id @default(uuid())
 
-  leadId          String
-  lead            Lead   @relation(fields: [leadId], references: [id])
+  leadId String
+  lead   Lead   @relation(fields: [leadId], references: [id])
 
-  name            String
-  websiteUrl      String
+  name       String
+  websiteUrl String
 
-  performance     Int?
-  seo             Int?
-  accessibility   Int?
-  bestPractices   Int?
+  performance   Int?
+  seo           Int?
+  accessibility Int?
+  bestPractices Int?
 
-  createdAt       DateTime @default(now())
+  createdAt DateTime @default(now())
+}
+
+enum CampaignStatus {
+  DRAFT
+  ACTIVE
+  PAUSED
+  COMPLETED
+  ARCHIVED
+}
+
+enum EnrollmentStatus {
+  PENDING
+  ACTIVE
+  REPLIED
+  COMPLETED
+  STOPPED
+  BOUNCED
+}
+
+enum CampaignEventType {
+  LEAD_ENROLLED
+  EMAIL_SENT
+  EMAIL_DELIVERED
+  EMAIL_OPENED
+  LINK_CLICKED
+  EMAIL_BOUNCED
+  EMAIL_UNSUBSCRIBED
+  REPLY_RECEIVED
+  POSITIVE_REPLY
+  NEGATIVE_REPLY
+  MEETING_BOOKED
+  MEETING_HELD
+  PROPOSAL_SENT
+  CLIENT_WON
+  CLIENT_LOST
+}
+
+model Campaign {
+  id                 String         @id @default(uuid())
+  name               String
+  variant            String?
+  description        String?
+  status             CampaignStatus @default(DRAFT)
+  externalCampaignId String?        @unique
+  startedAt          DateTime?
+  endedAt            DateTime?
+  createdAt          DateTime       @default(now())
+  updatedAt          DateTime       @updatedAt
+
+  enrollments CampaignEnrollment[]
+  events      CampaignEvent[]
+
+  @@index([status])
+  @@index([createdAt])
+}
+
+model CampaignEnrollment {
+  id         String           @id @default(uuid())
+  campaignId String
+  leadId     String
+  status     EnrollmentStatus @default(PENDING)
+  enrolledAt DateTime         @default(now())
+  stoppedAt  DateTime?
+  stopReason String?
+
+  campaign Campaign        @relation(fields: [campaignId], references: [id], onDelete: Cascade)
+  lead     Lead            @relation(fields: [leadId], references: [id], onDelete: Cascade)
+  events   CampaignEvent[]
+
+  @@unique([campaignId, leadId])
+  @@index([campaignId, status])
+  @@index([leadId])
+}
+
+model CampaignEvent {
+  id           String            @id @default(uuid())
+  campaignId   String
+  leadId       String
+  enrollmentId String?
+  type         CampaignEventType
+  occurredAt   DateTime          @default(now())
+  source       String?
+  externalId   String?           @unique
+  metadata     Json?
+
+  campaign   Campaign            @relation(fields: [campaignId], references: [id], onDelete: Cascade)
+  lead       Lead                @relation(fields: [leadId], references: [id], onDelete: Cascade)
+  enrollment CampaignEnrollment? @relation(fields: [enrollmentId], references: [id], onDelete: SetNull)
+
+  @@index([campaignId, type])
+  @@index([campaignId, occurredAt])
+  @@index([leadId, occurredAt])
+  @@index([type, occurredAt])
 }
