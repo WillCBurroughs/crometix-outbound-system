@@ -14,7 +14,7 @@ export async function generateReportUrls() {
   let generated = 0;
 
   for (const lead of leads) {
-    const reportUrl = `${frontendBaseUrl}/reports/${lead.id}`;
+    const reportUrl = `${frontendBaseUrl}/report/${lead.id}`;
 
     await prisma.lead.update({
       where: { id: lead.id },

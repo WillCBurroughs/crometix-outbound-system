@@ -1,6 +1,10 @@
 import { prisma } from "../lib/prisma.js";
 import { searchApolloPeople } from "../services/apolloService.js";
 import { enrichPerson } from "../services/apolloEnrichmentService.js";
+import {
+  advanceApolloPage,
+  getPipelineState,
+} from "../services/pipelineStateService.js";
 
 export async function importApolloLeads(page = 1) {
   const data = await searchApolloPeople(page);
@@ -59,4 +63,15 @@ export async function importApolloLeads(page = 1) {
     skipped,
     errors,
   };
+}
+
+export async function importNextApolloPage() {
+  const state = await getPipelineState();
+  const page = state.nextApolloPage;
+
+  const result = await importApolloLeads(page);
+
+  await advanceApolloPage();
+
+  return { result };
 }
