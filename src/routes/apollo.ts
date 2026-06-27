@@ -23,9 +23,15 @@ router.get("/search-test", async (_req, res) => {
   }
 });
 
-router.get("/import-test", async (_req, res) => {
+router.get("/import-test", async (req, res) => {
   try {
-    const result = await importApolloLeads();
+    const page = Math.max(
+      1,
+      Number.parseInt(String(req.query.page ?? "1"), 10) || 1
+    );
+
+    const result = await importApolloLeads(page);
+
     res.json(result);
   } catch (error: any) {
     res.status(500).json({

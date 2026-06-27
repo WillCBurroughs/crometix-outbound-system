@@ -2,8 +2,8 @@ import { prisma } from "../lib/prisma.js";
 import { searchApolloPeople } from "../services/apolloService.js";
 import { enrichPerson } from "../services/apolloEnrichmentService.js";
 
-export async function importApolloLeads() {
-  const data = await searchApolloPeople();
+export async function importApolloLeads(page = 1) {
+  const data = await searchApolloPeople(page);
 
   const people = data.people || [];
 
@@ -52,6 +52,7 @@ export async function importApolloLeads() {
   }
 
   return {
+    page,
     totalReturned: people.length,
     withEmail: peopleWithEmail.length,
     imported,
