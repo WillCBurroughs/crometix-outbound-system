@@ -2,7 +2,7 @@ import axios from "axios";
 
 const APOLLO_BASE_URL = "https://api.apollo.io/api/v1";
 
-export async function searchApolloPeople() {
+export async function searchApolloPeople(page = 1) {
   const apiKey = process.env.APOLLO_API_KEY;
 
   if (!apiKey) {
@@ -19,7 +19,7 @@ export async function searchApolloPeople() {
         "X-Api-Key": apiKey,
       },
       params: {
-        page: 1,
+        page,
         per_page: 100,
         q_keywords: "medical spa",
         "person_titles[]": [
