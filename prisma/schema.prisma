@@ -142,3 +142,11 @@ model CampaignEvent {
   @@index([leadId, occurredAt])
   @@index([type, occurredAt])
 }
+
+model PipelineState {
+  id             String   @id @default("outbound")
+  nextApolloPage Int      @default(1)
+  lastRunAt      DateTime?
+  isRunning      Boolean  @default(false)
+  updatedAt      DateTime @updatedAt
+}
