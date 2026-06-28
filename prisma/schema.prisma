@@ -160,10 +160,9 @@ model VerticalProfile {
   isActive              Boolean  @default(false)
 
   apolloKeywords        Json
+  apolloExcludeTerms    Json
   personTitles          Json
   organizationLocations Json
-
-  leads                 Lead[]
 
   includeTerms          Json
   excludeTerms          Json
@@ -171,9 +170,12 @@ model VerticalProfile {
 
   maxPerformanceScore   Int      @default(60)
   requiredCompetitors   Int      @default(2)
+  dailyPushLimit        Int      @default(25)
 
   instantlyCampaignId   String?
 
   createdAt             DateTime @default(now())
   updatedAt             DateTime @updatedAt
+
+  leads                 Lead[]
 }

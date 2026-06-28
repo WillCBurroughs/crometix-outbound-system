@@ -5,7 +5,7 @@ import { findCompetitors } from "../services/competitorService.js";
 export async function generateComparisons(verticalProfileId?: string) {
   const leads = await prisma.lead.findMany({
     where: {
-      status: "REPORT_PENDING",
+      status: "QA_PRE_APPROVED",
       ...(verticalProfileId ? { verticalProfileId } : {}),
     },
     take: 5,
