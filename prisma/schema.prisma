@@ -9,6 +9,8 @@ datasource db {
 model Lead {
   id                  String               @id @default(uuid())
   apolloId            String?              @unique
+  verticalProfileId   String?
+  verticalProfile     VerticalProfile? @relation(fields: [verticalProfileId], references: [id])
   firstName           String?
   lastName            String?
   email               String?
@@ -141,4 +143,39 @@ model CampaignEvent {
   @@index([campaignId, occurredAt])
   @@index([leadId, occurredAt])
   @@index([type, occurredAt])
+}
+
+model PipelineState {
+  id             String   @id @default("outbound")
+  nextApolloPage Int      @default(1)
+  lastRunAt      DateTime?
+  isRunning      Boolean  @default(false)
+  updatedAt      DateTime @updatedAt
+}
+
+model VerticalProfile {
+  id                    String   @id @default(uuid())
+  slug                  String   @unique
+  name                  String
+  isActive              Boolean  @default(false)
+
+  apolloKeywords        Json
+  apolloExcludeTerms    Json
+  personTitles          Json
+  organizationLocations Json
+
+  includeTerms          Json
+  excludeTerms          Json
+  reviewTerms           Json
+
+  maxPerformanceScore   Int      @default(60)
+  requiredCompetitors   Int      @default(2)
+  dailyPushLimit        Int      @default(25)
+
+  instantlyCampaignId   String?
+
+  createdAt             DateTime @default(now())
+  updatedAt             DateTime @updatedAt
+
+  leads                 Lead[]
 }

@@ -9,6 +9,7 @@ import multer from "multer";
 import fs from "fs";
 import csv from "csv-parser";
 import { pushReportReadyLeadsToInstantly } from "../jobs/pushToInstantlyJob.js";
+import { runOutboundPipeline } from "../jobs/runOutboundPipelineJob.js";
 
 const router = express.Router();
 const upload = multer({ dest: "uploads/" });
@@ -49,6 +50,25 @@ router.post("/generate-report-urls", async (_req, res) => {
     res.json(result);
   } catch (error: any) {
     res.status(500).json({ error: error.message });
+  }
+});
+
+router.post("/pipeline/run", async (_req, res) => {
+  try {
+    const result = await runOutboundPipeline();
+
+    res.json({
+      result,
+    });
+  } catch (error: any) {
+    const statusCode =
+      error.message === "Outbound pipeline is already running"
+        ? 409
+        : 500;
+
+    res.status(statusCode).json({
+      error: error.message,
+    });
   }
 });
 

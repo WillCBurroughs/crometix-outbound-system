@@ -10,19 +10,20 @@ function normalizeUrl(url: string | null | undefined) {
 }
 
 function normalizeName(name: string | null | undefined) {
-  return (name || "")
-    .toLowerCase()
-    .replace(/[^a-z0-9]/g, "");
+  return (name || "").toLowerCase().replace(/[^a-z0-9]/g, "");
 }
 
 function normalizeWebsiteUrl(url: string) {
   return /^https?:\/\//i.test(url) ? url : `https://${url}`;
 }
 
-function extractCompetitors(data: any, lead: {
-  companyName: string | null;
-  websiteUrl: string | null;
-}) {
+function extractCompetitors(
+  data: any,
+  lead: {
+    companyName: string | null;
+    websiteUrl: string | null;
+  },
+) {
   const companies = data.organizations || data.accounts || [];
 
   const leadName = normalizeName(lead.companyName);
@@ -32,23 +33,24 @@ function extractCompetitors(data: any, lead: {
     .filter((company: any) => {
       const companyName = normalizeName(company.name);
       const rawUrl =
-        company.website_url ||
-        company.primary_domain ||
-        company.domain;
+        company.website_url || company.primary_domain || company.domain;
 
       const companyUrl = normalizeUrl(rawUrl);
 
       if (!companyName || !companyUrl) return false;
       if (companyName === leadName) return false;
       if (companyUrl === leadUrl) return false;
-      if (companyName.includes(leadName) || leadName.includes(companyName)) return false;
+      if (companyName.includes(leadName) || leadName.includes(companyName))
+        return false;
 
       const rawText = [
         company.name,
         company.short_description,
         company.industry,
         ...(company.keywords || []),
-      ].join(" ").toLowerCase();
+      ]
+        .join(" ")
+        .toLowerCase();
 
       const badTerms = [
         "association",
@@ -74,16 +76,14 @@ function extractCompetitors(data: any, lead: {
         "laser",
       ];
 
-      if (badTerms.some(term => rawText.includes(term))) return false;
-      if (!goodTerms.some(term => rawText.includes(term))) return false;
+      if (badTerms.some((term) => rawText.includes(term))) return false;
+      if (!goodTerms.some((term) => rawText.includes(term))) return false;
 
       return true;
     })
     .map((company: any) => {
       const rawUrl =
-        company.website_url ||
-        company.primary_domain ||
-        company.domain;
+        company.website_url || company.primary_domain || company.domain;
 
       return {
         name: company.name,
@@ -92,21 +92,36 @@ function extractCompetitors(data: any, lead: {
     });
 }
 
-export async function findCompetitors(lead: {
-  companyName: string | null;
-  websiteUrl: string | null;
-  city: string | null;
-  state: string | null;
-}) {
-  const cityData = await searchApolloCompaniesForCompetitors(lead);
+export async function findCompetitors(
+  lead: {
+    companyName: string | null;
+    websiteUrl: string | null;
+    city: string | null;
+    state: string | null;
+  },
+  config: {
+    keywords: string[];
+  },
+) {
+  const cityData = await searchApolloCompaniesForCompetitors(lead, {
+    keywords: config.keywords,
+    employeeRanges: ["1,50"],
+    perPage: 50,
+  });
   let competitors = extractCompetitors(cityData, lead);
 
   if (competitors.length < 1 && lead.state) {
-    const stateData = await searchApolloCompaniesForCompetitors({
-      ...lead,
-      city: null,
-    });
-
+    const stateData = await searchApolloCompaniesForCompetitors(
+      {
+        ...lead,
+        city: null,
+      },
+      {
+        keywords: config.keywords,
+        employeeRanges: ["1,50"],
+        perPage: 50,
+      },
+    );
     competitors = extractCompetitors(stateData, lead);
   }
 

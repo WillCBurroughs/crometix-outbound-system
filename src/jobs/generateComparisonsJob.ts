@@ -2,14 +2,16 @@ import { prisma } from "../lib/prisma.js";
 import { auditWebsite } from "../services/auditService.js";
 import { findCompetitors } from "../services/competitorService.js";
 
-export async function generateComparisons() {
+export async function generateComparisons(verticalProfileId?: string) {
   const leads = await prisma.lead.findMany({
     where: {
-      status: "REPORT_PENDING",
+      status: "QA_PRE_APPROVED",
+      ...(verticalProfileId ? { verticalProfileId } : {}),
     },
     take: 5,
     include: {
       competitors: true,
+      verticalProfile: true,
     },
   });
 
@@ -24,13 +26,52 @@ export async function generateComparisons() {
         skipped++;
         continue;
       }
+      if (!lead.verticalProfile) {
+        await prisma.lead.update({
+          where: { id: lead.id },
+          data: {
+            status: "COMPARISON_ERROR",
+            errorMessage: "Lead has no vertical profile",
+          },
+        });
 
-      const competitors = await findCompetitors({
-        companyName: lead.companyName,
-        websiteUrl: lead.websiteUrl,
-        city: lead.city,
-        state: lead.state,
-      });
+        skipped++;
+        continue;
+      }
+
+      const competitorKeywords = Array.isArray(
+        lead.verticalProfile.apolloKeywords,
+      )
+        ? lead.verticalProfile.apolloKeywords.filter(
+            (value): value is string =>
+              typeof value === "string" && value.trim().length > 0,
+          )
+        : [];
+
+      if (competitorKeywords.length === 0) {
+        await prisma.lead.update({
+          where: { id: lead.id },
+          data: {
+            status: "COMPARISON_ERROR",
+            errorMessage: "Vertical profile has no Apollo keywords",
+          },
+        });
+
+        skipped++;
+        continue;
+      }
+
+      const competitors = await findCompetitors(
+        {
+          companyName: lead.companyName,
+          websiteUrl: lead.websiteUrl,
+          city: lead.city,
+          state: lead.state,
+        },
+        {
+          keywords: competitorKeywords,
+        },
+      );
 
       if (competitors.length < 1) {
         await prisma.lead.update({

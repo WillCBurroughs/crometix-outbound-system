@@ -1,9 +1,29 @@
 import { prisma } from "../lib/prisma.js";
 import { searchApolloPeople } from "../services/apolloService.js";
 import { enrichPerson } from "../services/apolloEnrichmentService.js";
+import {
+  advanceApolloPage,
+  getPipelineState,
+} from "../services/pipelineStateService.js";
+import { getActiveVerticalProfile } from "../services/verticalProfileService.js";
 
-export async function importApolloLeads(page = 1) {
-  const data = await searchApolloPeople(page);
+type ApolloImportConfig = {
+  verticalProfileId: string;
+  verticalSlug: string;
+  keyword: string;
+  titles: string[];
+  locations: string[];
+};
+
+export async function importApolloLeads(
+  page: number,
+  config: ApolloImportConfig,
+) {
+  const data = await searchApolloPeople(page, {
+    keyword: config.keyword,
+    titles: config.titles,
+    locations: config.locations,
+  });
 
   const people = data.people || [];
 
@@ -32,6 +52,7 @@ export async function importApolloLeads(page = 1) {
         update: {},
         create: {
           apolloId: person.id,
+          verticalProfileId: config.verticalProfileId,
           firstName: person.first_name,
           lastName: person.last_name,
           email: person.email,
@@ -52,11 +73,52 @@ export async function importApolloLeads(page = 1) {
   }
 
   return {
+    vertical: config.verticalSlug,
+    keyword: config.keyword,
     page,
     totalReturned: people.length,
     withEmail: peopleWithEmail.length,
     imported,
     skipped,
     errors,
+  };
+}
+
+export async function importNextApolloPage() {
+  const profile = await getActiveVerticalProfile();
+  const state = await getPipelineState(profile.slug);
+
+  if (profile.apolloKeywords.length === 0) {
+    throw new Error(
+      `Vertical profile "${profile.slug}" has no Apollo keywords`,
+    );
+  }
+
+  const logicalPage = state.nextApolloPage;
+
+  const keywordIndex =
+    (logicalPage - 1) % profile.apolloKeywords.length;
+
+  const apolloPage =
+    Math.floor(
+      (logicalPage - 1) / profile.apolloKeywords.length,
+    ) + 1;
+
+  const keyword = profile.apolloKeywords[keywordIndex];
+
+  const result = await importApolloLeads(apolloPage, {
+    verticalProfileId: profile.id,
+    verticalSlug: profile.slug,
+    keyword,
+    titles: profile.personTitles,
+    locations: profile.organizationLocations,
+  });
+
+  await advanceApolloPage(profile.slug);
+
+  return {
+    ...result,
+    logicalPage,
+    keywordIndex,
   };
 }
