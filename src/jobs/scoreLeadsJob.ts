@@ -4,8 +4,13 @@ import { auditWebsite } from "../services/auditService.js";
 
 export async function processNewLeadsBatch(batchSize = 5) {
   const leads = await prisma.lead.findMany({
-    where: { status: "NEW" },
+    where: {
+      status: "NEW",
+    },
     take: batchSize,
+    include: {
+      verticalProfile: true,
+    },
   });
 
   let attempted = leads.length;
@@ -48,10 +53,7 @@ export async function processNewLeadsBatch(batchSize = 5) {
         data: {
           websiteScore: performance,
           performance,
-          seo:
-            audit.seo != null
-              ? Math.round(Number(audit.seo))
-              : null,
+          seo: audit.seo != null ? Math.round(Number(audit.seo)) : null,
           accessibility:
             audit.accessibility != null
               ? Math.round(Number(audit.accessibility))
@@ -60,9 +62,7 @@ export async function processNewLeadsBatch(batchSize = 5) {
             audit.bestPractices != null
               ? Math.round(Number(audit.bestPractices))
               : null,
-          status: qualifiedLead
-            ? "REPORT_PENDING"
-            : "DISQUALIFIED",
+          status: qualifiedLead ? "REPORT_PENDING" : "DISQUALIFIED",
         },
       });
 
@@ -86,10 +86,7 @@ export async function processNewLeadsBatch(batchSize = 5) {
         },
       });
 
-      console.error(
-        `Error scoring ${lead.companyName}:`,
-        error.message,
-      );
+      console.error(`Error scoring ${lead.companyName}:`, error.message);
     }
   }
 
