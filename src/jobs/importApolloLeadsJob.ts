@@ -5,9 +5,18 @@ import {
   advanceApolloPage,
   getPipelineState,
 } from "../services/pipelineStateService.js";
+import { getActiveVerticalProfile } from "../services/verticalProfileService.js";
 
 export async function importApolloLeads(page = 1) {
-  const data = await searchApolloPeople(page);
+  const profile = await getActiveVerticalProfile();
+
+  const keyword = profile.apolloKeywords[0];
+
+  const data = await searchApolloPeople(page, {
+    keyword,
+    titles: profile.personTitles,
+    locations: profile.organizationLocations,
+  });
 
   const people = data.people || [];
 
@@ -39,6 +48,7 @@ export async function importApolloLeads(page = 1) {
           firstName: person.first_name,
           lastName: person.last_name,
           email: person.email,
+          verticalProfileId: profile.id,
           companyName: person.organization.name,
           websiteUrl: person.organization.website_url,
           city: person.city || person.organization.city,

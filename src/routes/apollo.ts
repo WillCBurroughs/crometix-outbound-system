@@ -7,12 +7,19 @@ import {
 } from "../jobs/importApolloLeadsJob.js";
 import { findCompetitors } from "../services/competitorService.js";
 import { prisma } from "../lib/prisma.js";
+import { getActiveVerticalProfile } from "../services/verticalProfileService.js";
 
 const router = express.Router();
 
 router.get("/search-test", async (_req, res) => {
   try {
-    const data = await searchApolloPeople();
+    const profile = await getActiveVerticalProfile();
+
+    const data = await searchApolloPeople(1, {
+      keyword: profile.apolloKeywords[0],
+      titles: profile.personTitles,
+      locations: profile.organizationLocations,
+    });
     const peopleWithEmail = data.people.filter(
       (p: any) => p.has_email === true,
     );
@@ -70,7 +77,13 @@ router.post("/import-next-page", async (_req, res) => {
 });
 
 router.get("/stats", async (_req, res) => {
-  const data = await searchApolloPeople();
+  const profile = await getActiveVerticalProfile();
+
+  const data = await searchApolloPeople(1, {
+    keyword: profile.apolloKeywords[0],
+    titles: profile.personTitles,
+    locations: profile.organizationLocations,
+  });
 
   const withEmail = data.people.filter((p: any) => p.has_email === true);
 
@@ -102,7 +115,11 @@ router.get("/competitor-test", async (_req, res) => {
       return res.status(404).json({ error: "No REPORT_PENDING lead found" });
     }
 
-    const competitors = await findCompetitors(lead);
+    const profile = await getActiveVerticalProfile();
+
+    const competitors = await findCompetitors(lead, {
+      keywords: profile.apolloKeywords,
+    });
 
     res.json({
       lead: {
