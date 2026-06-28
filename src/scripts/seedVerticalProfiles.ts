@@ -24,7 +24,7 @@ async function main() {
         "consulting",
         "distributor",
       ],
-      dailyPushLimit: 25,
+      dailyPushLimit: 1000,
       personTitles: [
         "Owner",
         "Founder",
@@ -89,7 +89,7 @@ async function main() {
         "certification",
         "education",
       ],
-      dailyPushLimit: 25,
+      dailyPushLimit: 1000,
       organizationLocations: ["United States"],
       includeTerms: [
         "medical spa",
