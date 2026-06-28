@@ -11,19 +11,33 @@ import { getActiveVerticalProfile } from "../services/verticalProfileService.js"
 
 const router = express.Router();
 
-router.get("/search-test", async (_req, res) => {
+router.get("/search-test", async (req, res) => {
   try {
     const profile = await getActiveVerticalProfile();
 
-    const data = await searchApolloPeople(1, {
-      keyword: profile.apolloKeywords[0],
+    const page = Math.max(
+      1,
+      Number.parseInt(String(req.query.page ?? "1"), 10) || 1,
+    );
+
+    const keyword =
+      typeof req.query.keyword === "string" &&
+      req.query.keyword.trim()
+        ? req.query.keyword.trim()
+        : profile.apolloKeywords[0];
+
+    const data = await searchApolloPeople(page, {
+      keyword,
       titles: profile.personTitles,
       locations: profile.organizationLocations,
     });
-    const peopleWithEmail = data.people.filter(
-      (p: any) => p.has_email === true,
-    );
-    res.json(peopleWithEmail.slice(0, 5));
+
+    res.json({
+      vertical: profile.slug,
+      keyword,
+      page,
+      ...data,
+    });
   } catch (error: any) {
     res.status(500).json({
       error: error.message,
@@ -34,12 +48,26 @@ router.get("/search-test", async (_req, res) => {
 
 router.get("/import-test", async (req, res) => {
   try {
+    const profile = await getActiveVerticalProfile();
+
     const page = Math.max(
       1,
       Number.parseInt(String(req.query.page ?? "1"), 10) || 1,
     );
 
-    const result = await importApolloLeads(page);
+    const keyword =
+      typeof req.query.keyword === "string" &&
+      req.query.keyword.trim()
+        ? req.query.keyword.trim()
+        : profile.apolloKeywords[0];
+
+    const result = await importApolloLeads(page, {
+      verticalProfileId: profile.id,
+      verticalSlug: profile.slug,
+      keyword,
+      titles: profile.personTitles,
+      locations: profile.organizationLocations,
+    });
 
     res.json(result);
   } catch (error: any) {

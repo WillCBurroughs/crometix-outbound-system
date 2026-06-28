@@ -1,25 +1,31 @@
 import { prisma } from "../lib/prisma.js";
 
-const PIPELINE_ID = "outbound";
+function getPipelineId(verticalSlug: string) {
+  return `outbound:${verticalSlug}`;
+}
 
-export async function getPipelineState() {
+export async function getPipelineState(verticalSlug: string) {
+  const id = getPipelineId(verticalSlug);
+
   return prisma.pipelineState.upsert({
     where: {
-      id: PIPELINE_ID,
+      id,
     },
     update: {},
     create: {
-      id: PIPELINE_ID,
+      id,
       nextApolloPage: 1,
       isRunning: false,
     },
   });
 }
 
-export async function advanceApolloPage() {
+export async function advanceApolloPage(verticalSlug: string) {
+  const id = getPipelineId(verticalSlug);
+
   return prisma.pipelineState.update({
     where: {
-      id: PIPELINE_ID,
+      id,
     },
     data: {
       nextApolloPage: {

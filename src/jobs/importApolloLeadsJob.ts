@@ -7,15 +7,22 @@ import {
 } from "../services/pipelineStateService.js";
 import { getActiveVerticalProfile } from "../services/verticalProfileService.js";
 
-export async function importApolloLeads(page = 1) {
-  const profile = await getActiveVerticalProfile();
+type ApolloImportConfig = {
+  verticalProfileId: string;
+  verticalSlug: string;
+  keyword: string;
+  titles: string[];
+  locations: string[];
+};
 
-  const keyword = profile.apolloKeywords[0];
-
+export async function importApolloLeads(
+  page: number,
+  config: ApolloImportConfig,
+) {
   const data = await searchApolloPeople(page, {
-    keyword,
-    titles: profile.personTitles,
-    locations: profile.organizationLocations,
+    keyword: config.keyword,
+    titles: config.titles,
+    locations: config.locations,
   });
 
   const people = data.people || [];
@@ -45,10 +52,10 @@ export async function importApolloLeads(page = 1) {
         update: {},
         create: {
           apolloId: person.id,
+          verticalProfileId: config.verticalProfileId,
           firstName: person.first_name,
           lastName: person.last_name,
           email: person.email,
-          verticalProfileId: profile.id,
           companyName: person.organization.name,
           websiteUrl: person.organization.website_url,
           city: person.city || person.organization.city,
@@ -66,6 +73,8 @@ export async function importApolloLeads(page = 1) {
   }
 
   return {
+    vertical: config.verticalSlug,
+    keyword: config.keyword,
     page,
     totalReturned: people.length,
     withEmail: peopleWithEmail.length,
@@ -76,12 +85,40 @@ export async function importApolloLeads(page = 1) {
 }
 
 export async function importNextApolloPage() {
-  const state = await getPipelineState();
-  const page = state.nextApolloPage;
+  const profile = await getActiveVerticalProfile();
+  const state = await getPipelineState(profile.slug);
 
-  const result = await importApolloLeads(page);
+  if (profile.apolloKeywords.length === 0) {
+    throw new Error(
+      `Vertical profile "${profile.slug}" has no Apollo keywords`,
+    );
+  }
 
-  await advanceApolloPage();
+  const logicalPage = state.nextApolloPage;
 
-  return result;
+  const keywordIndex =
+    (logicalPage - 1) % profile.apolloKeywords.length;
+
+  const apolloPage =
+    Math.floor(
+      (logicalPage - 1) / profile.apolloKeywords.length,
+    ) + 1;
+
+  const keyword = profile.apolloKeywords[keywordIndex];
+
+  const result = await importApolloLeads(apolloPage, {
+    verticalProfileId: profile.id,
+    verticalSlug: profile.slug,
+    keyword,
+    titles: profile.personTitles,
+    locations: profile.organizationLocations,
+  });
+
+  await advanceApolloPage(profile.slug);
+
+  return {
+    ...result,
+    logicalPage,
+    keywordIndex,
+  };
 }
