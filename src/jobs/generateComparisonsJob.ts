@@ -2,10 +2,11 @@ import { prisma } from "../lib/prisma.js";
 import { auditWebsite } from "../services/auditService.js";
 import { findCompetitors } from "../services/competitorService.js";
 
-export async function generateComparisons() {
+export async function generateComparisons(verticalProfileId?: string) {
   const leads = await prisma.lead.findMany({
     where: {
       status: "REPORT_PENDING",
+      ...(verticalProfileId ? { verticalProfileId } : {}),
     },
     take: 5,
     include: {

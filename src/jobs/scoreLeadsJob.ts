@@ -2,10 +2,14 @@ import cron from "node-cron";
 import { prisma } from "../lib/prisma.js";
 import { auditWebsite } from "../services/auditService.js";
 
-export async function processNewLeadsBatch(batchSize = 5) {
+export async function processNewLeadsBatch(
+  batchSize = 5,
+  verticalProfileId?: string,
+) {
   const leads = await prisma.lead.findMany({
     where: {
       status: "NEW",
+      ...(verticalProfileId ? { verticalProfileId } : {}),
     },
     take: batchSize,
     include: {
@@ -13,7 +17,7 @@ export async function processNewLeadsBatch(batchSize = 5) {
     },
   });
 
-  let attempted = leads.length;
+  const attempted = leads.length;
   let scored = 0;
   let qualified = 0;
   let disqualified = 0;
@@ -35,6 +39,20 @@ export async function processNewLeadsBatch(batchSize = 5) {
       continue;
     }
 
+    if (!lead.verticalProfile) {
+      errors++;
+
+      await prisma.lead.update({
+        where: { id: lead.id },
+        data: {
+          status: "ERROR",
+          errorMessage: "Lead has no vertical profile",
+        },
+      });
+
+      continue;
+    }
+
     try {
       await prisma.lead.update({
         where: { id: lead.id },
@@ -46,7 +64,13 @@ export async function processNewLeadsBatch(batchSize = 5) {
 
       const audit = await auditWebsite(lead.websiteUrl);
       const performance = Math.round(Number(audit.performance));
-      const qualifiedLead = performance <= 60;
+
+      if (!Number.isFinite(performance)) {
+        throw new Error("Audit returned an invalid performance score");
+      }
+
+      const qualifiedLead =
+        performance <= lead.verticalProfile.maxPerformanceScore;
 
       await prisma.lead.update({
         where: { id: lead.id },
@@ -74,7 +98,10 @@ export async function processNewLeadsBatch(batchSize = 5) {
         disqualified++;
       }
 
-      console.log(`Scored ${lead.companyName}: ${performance}`);
+      console.log(
+        `Scored ${lead.companyName}: ${performance} ` +
+          `(threshold: ${lead.verticalProfile.maxPerformanceScore})`,
+      );
     } catch (error: any) {
       errors++;
 
@@ -105,7 +132,7 @@ export function scoreLeads() {
     console.log("Running score leads job...");
 
     try {
-      const result = await processNewLeadsBatch();
+      const result = await processNewLeadsBatch(5);
       console.log("Score leads result:", result);
     } catch (error) {
       console.error("Score leads job failed:", error);
