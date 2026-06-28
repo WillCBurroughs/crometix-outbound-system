@@ -73,5 +73,5 @@ export async function importNextApolloPage() {
 
   await advanceApolloPage();
 
-  return { result };
+  return result;
 }
