@@ -1,0 +1,130 @@
+* {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+  background: #0f172a;
+  color: #e5e7eb;
+  font-family: Inter, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI",
+    sans-serif;
+}
+
+.page {
+  min-height: 100vh;
+  padding: 48px;
+}
+
+.header {
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  margin-bottom: 32px;
+}
+
+.eyebrow {
+  margin: 0 0 8px;
+  color: #38bdf8;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+h1 {
+  margin: 0;
+  font-size: 42px;
+}
+
+.subtitle {
+  color: #94a3b8;
+}
+
+.cards {
+  display: grid;
+  grid-template-columns: repeat(6, 1fr);
+  gap: 16px;
+  margin-bottom: 24px;
+}
+
+.card,
+.panel {
+  background: #111827;
+  border: 1px solid #1f2937;
+  border-radius: 18px;
+  box-shadow: 0 24px 80px rgba(0, 0, 0, 0.25);
+}
+
+.card {
+  padding: 20px;
+}
+
+.card p {
+  margin: 0 0 12px;
+  color: #94a3b8;
+  font-size: 14px;
+}
+
+.card strong {
+  font-size: 30px;
+}
+
+.panel {
+  padding: 28px;
+}
+
+.panel h2 {
+  margin: 0 0 24px;
+}
+
+.funnel {
+  display: flex;
+  flex-direction: column;
+  gap: 18px;
+}
+
+.funnel-row {
+  display: grid;
+  grid-template-columns: 220px 1fr 180px;
+  gap: 18px;
+  align-items: center;
+}
+
+.funnel-label {
+  display: flex;
+  justify-content: space-between;
+  gap: 16px;
+}
+
+.funnel-label span {
+  color: #cbd5e1;
+}
+
+.bar-wrap {
+  height: 16px;
+  background: #020617;
+  border-radius: 999px;
+  overflow: hidden;
+}
+
+.bar {
+  height: 100%;
+  background: linear-gradient(90deg, #38bdf8, #22c55e);
+  border-radius: 999px;
+}
+
+.rates {
+  display: flex;
+  flex-direction: column;
+  color: #94a3b8;
+  font-size: 13px;
+}
+
+@media (max-width: 1100px) {
+  .cards {
+    grid-template-columns: repeat(2, 1fr);
+  }
+
+  .funnel-row {
+    grid-template-columns: 1fr;
+  }
+}

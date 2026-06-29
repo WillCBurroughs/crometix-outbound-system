@@ -9,27 +9,23 @@ const DISQUALIFIED_STATUSES = [
   "COMPARISON_ERROR",
 ];
 
-const leadImportTotals = await prisma.leadImportLog.aggregate({
-  _sum: {
-    totalReturned: true,
-    withEmail: true,
-    imported: true,
-    skipped: true,
-    errors: true,
-  },
-});
-
-const leadsPulled = leadImportTotals._sum.totalReturned ?? 0;
-const verifiedEmails = leadImportTotals._sum.withEmail ?? 0;
-const leadsImported = leadImportTotals._sum.imported ?? 0;
-
-
-
 router.get("/metrics", async (_req, res) => {
   try {
+    const leadImportTotals = await prisma.leadImportLog.aggregate({
+      _sum: {
+        totalReturned: true,
+        withEmail: true,
+        imported: true,
+        skipped: true,
+        errors: true,
+      },
+    });
+
+    const leadsPulled = leadImportTotals._sum.totalReturned ?? 0;
+    const verifiedEmails = leadImportTotals._sum.withEmail ?? 0;
+
     const [
-      leadsPulled,
-      verifiedEmails,
+      leadsImported,
       qualifiedLeads,
       reportsGenerated,
       sentToInstantly,
@@ -40,14 +36,6 @@ router.get("/metrics", async (_req, res) => {
       salesClosed,
     ] = await Promise.all([
       prisma.lead.count(),
-
-      prisma.lead.count({
-        where: {
-          email: {
-            not: null,
-          },
-        },
-      }),
 
       prisma.lead.count({
         where: {
@@ -67,9 +55,7 @@ router.get("/metrics", async (_req, res) => {
 
       prisma.lead.count({
         where: {
-          instantlyId: {
-            not: null,
-          },
+          status: "INSTANTLY_ADDED",
         },
       }),
 
@@ -104,6 +90,40 @@ router.get("/metrics", async (_req, res) => {
       }),
     ]);
 
+    const stages = [
+      { key: "leadsPulled", label: "Leads Pulled", value: leadsPulled },
+      {
+        key: "verifiedEmails",
+        label: "Verified Emails",
+        value: verifiedEmails,
+      },
+      { key: "leadsImported", label: "Leads Imported", value: leadsImported },
+      {
+        key: "qualifiedLeads",
+        label: "Qualified Leads",
+        value: qualifiedLeads,
+      },
+      {
+        key: "reportsGenerated",
+        label: "Reports Generated",
+        value: reportsGenerated,
+      },
+      {
+        key: "sentToInstantly",
+        label: "Sent to Instantly",
+        value: sentToInstantly,
+      },
+      { key: "emailsSent", label: "Emails Sent", value: emailsSent },
+      { key: "reportsViewed", label: "Reports Viewed", value: reportsViewed },
+      {
+        key: "positiveResponses",
+        label: "Positive Responses",
+        value: positiveResponses,
+      },
+      { key: "demosBooked", label: "Demos Booked", value: demosBooked },
+      { key: "salesClosed", label: "Sales Closed", value: salesClosed },
+    ];
+
     res.json({
       funnel: {
         leadsPulled,
@@ -118,6 +138,7 @@ router.get("/metrics", async (_req, res) => {
         demosBooked,
         salesClosed,
       },
+      stages,
     });
   } catch (error: any) {
     res.status(500).json({
