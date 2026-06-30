@@ -72,6 +72,21 @@ export async function importApolloLeads(
     }
   }
 
+  await prisma.leadImportLog.create({
+    data: {
+      source: "APOLLO",
+      verticalProfileId: config.verticalProfileId,
+      vertical: config.verticalSlug,
+      keyword: config.keyword,
+      page,
+      totalReturned: people.length,
+      withEmail: peopleWithEmail.length,
+      imported,
+      skipped,
+      errors,
+    },
+  });
+
   return {
     vertical: config.verticalSlug,
     keyword: config.keyword,
@@ -96,13 +111,10 @@ export async function importNextApolloPage() {
 
   const logicalPage = state.nextApolloPage;
 
-  const keywordIndex =
-    (logicalPage - 1) % profile.apolloKeywords.length;
+  const keywordIndex = (logicalPage - 1) % profile.apolloKeywords.length;
 
   const apolloPage =
-    Math.floor(
-      (logicalPage - 1) / profile.apolloKeywords.length,
-    ) + 1;
+    Math.floor((logicalPage - 1) / profile.apolloKeywords.length) + 1;
 
   const keyword = profile.apolloKeywords[keywordIndex];
 

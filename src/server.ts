@@ -6,11 +6,15 @@ import leadsRouter from "./routes/leads.js";
 import apolloRouter from "./routes/apollo.js";
 import { scoreLeads } from "./jobs/scoreLeadsJob.js";
 import reportsRouter from "./routes/reports.js";
+import dashboardRouter from "./routes/dashboard.js";
+
 dotenv.config();
 
 const app = express();
 
 app.use(express.json());
+
+app.use("/dashboard", dashboardRouter);
 
 app.use("/leads", leadsRouter);
 app.use("/apollo", apolloRouter);

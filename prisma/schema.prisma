@@ -179,3 +179,26 @@ model VerticalProfile {
 
   leads                 Lead[]
 }
+
+model LeadImportLog {
+  id                String   @id @default(uuid())
+
+  source            String   // APOLLO, CSV, SCRAPER, MANUAL, etc.
+  verticalProfileId String?
+  vertical          String?
+  keyword           String?
+  page              Int?
+
+  totalReturned     Int      @default(0)
+  withEmail         Int      @default(0)
+  imported          Int      @default(0)
+  skipped           Int      @default(0)
+  errors            Int      @default(0)
+
+  createdAt         DateTime @default(now())
+
+  @@index([source])
+  @@index([verticalProfileId])
+  @@index([vertical])
+  @@index([createdAt])
+}
