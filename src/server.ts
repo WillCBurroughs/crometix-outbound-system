@@ -23,6 +23,26 @@ app.get("/health", (_req, res) => {
   res.json({ status: "ok" });
 });
 
+app.get("/api/instantly/analytics", async (req, res) => {
+  try {
+    const response = await fetch("https://api.instantly.ai/api/v2/campaigns/analytics", {
+      headers: {
+        Authorization: `Bearer ${process.env.INSTANTLY_API_KEY}`,
+      },
+    });
+
+    if (!response.ok) {
+      return res.status(response.status).json({ error: "Instantly API error" });
+    }
+
+    const data = await response.json();
+
+    res.json(data);
+  } catch (error) {
+    res.status(500).json({ error: "Failed to fetch Instantly analytics" });
+  }
+});
+
 app.use("/reports", reportsRouter);
 
 const port = process.env.PORT || 3001;
