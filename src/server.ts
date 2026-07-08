@@ -7,6 +7,7 @@ import apolloRouter from "./routes/apollo.js";
 import { scoreLeads } from "./jobs/scoreLeadsJob.js";
 import reportsRouter from "./routes/reports.js";
 import dashboardRouter from "./routes/dashboard.js";
+import instantlyRouter from "./routes/instantly.js";
 
 dotenv.config();
 
@@ -44,6 +45,7 @@ app.get("/api/instantly/analytics", async (req, res) => {
 });
 
 app.use("/reports", reportsRouter);
+app.use("/api/instantly", instantlyRouter);
 
 const port = process.env.PORT || 3001;
 
