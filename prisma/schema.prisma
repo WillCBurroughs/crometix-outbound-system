@@ -202,3 +202,26 @@ model LeadImportLog {
   @@index([vertical])
   @@index([createdAt])
 }
+
+model EmailEvent {
+  id            String   @id @default(cuid())
+  externalId    String?  @unique
+  eventType     String
+  timestamp     DateTime
+  workspaceId   String?
+  campaignId    String?
+  campaignName  String?
+  leadEmail     String?
+  emailAccount  String?
+  emailSubject  String?
+  step          Int?
+  variant       Int?
+  isFirst       Boolean?
+  rawPayload    Json
+  createdAt     DateTime @default(now())
+
+  @@index([eventType])
+  @@index([campaignId])
+  @@index([leadEmail])
+  @@index([timestamp])
+}
