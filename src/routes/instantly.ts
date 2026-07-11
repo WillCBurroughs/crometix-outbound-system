@@ -24,16 +24,18 @@ router.post("/webhook", async (req, res) => {
     const suppliedSecret = req.header("x-instantly-webhook-secret");
     const expectedSecret = process.env.INSTANTLY_WEBHOOK_SECRET;
 
+    console.log({
+      suppliedSecret: req.header("x-instantly-webhook-secret"),
+      expectedSecret: process.env.INSTANTLY_WEBHOOK_SECRET,
+    });
+
     if (!expectedSecret || suppliedSecret !== expectedSecret) {
       return res.status(401).json({ error: "Unauthorized webhook request" });
     }
 
     const payload = req.body || {};
 
-    const eventType =
-      payload.event_type ||
-      payload.type ||
-      payload.event;
+    const eventType = payload.event_type || payload.type || payload.event;
 
     const externalId =
       payload.event_id ||
@@ -44,10 +46,7 @@ router.post("/webhook", async (req, res) => {
       null;
 
     const leadExternalId =
-      payload.lead_id ||
-      payload.lead?.id ||
-      payload.data?.lead_id ||
-      null;
+      payload.lead_id || payload.lead?.id || payload.data?.lead_id || null;
 
     const email =
       payload.lead_email ||
@@ -160,10 +159,7 @@ router.post("/webhook", async (req, res) => {
       },
     });
 
-    if (
-      mappedType === "POSITIVE_REPLY" ||
-      mappedType === "NEGATIVE_REPLY"
-    ) {
+    if (mappedType === "POSITIVE_REPLY" || mappedType === "NEGATIVE_REPLY") {
       await prisma.lead.update({
         where: {
           id: lead.id,
@@ -177,7 +173,6 @@ router.post("/webhook", async (req, res) => {
     return res.json({
       ok: true,
     });
-
   } catch (error: any) {
     console.error("Instantly webhook error:", error);
 
