@@ -15,53 +15,138 @@ function mapInstantlyEventToCampaignEventType(eventType: string, payload: any) {
     return sentiment === "positive" ? "POSITIVE_REPLY" : "NEGATIVE_REPLY";
   }
 
-  // Instantly does not surface meeting-booked reliably via webhooks
   return null;
 }
 
 router.post("/webhook", async (req, res) => {
   try {
+    // Verify webhook secret
+    const suppliedSecret = req.header("x-instantly-webhook-secret");
+    const expectedSecret = process.env.INSTANTLY_WEBHOOK_SECRET;
+
+    if (!expectedSecret || suppliedSecret !== expectedSecret) {
+      return res.status(401).json({ error: "Unauthorized webhook request" });
+    }
+
     const payload = req.body || {};
 
-    const eventType = payload.event_type || payload.type || payload.event;
-    const externalId = payload.event_id || payload.id || payload.data?.event_id || null;
-    const leadExternalId = payload.lead_id || payload.lead?.id || payload.data?.lead_id || null;
-    const email = payload.email || payload.lead?.email || payload.data?.email || null;
+    const eventType =
+      payload.event_type ||
+      payload.type ||
+      payload.event;
+
+    const externalId =
+      payload.event_id ||
+      payload.email_id ||
+      payload.id ||
+      payload.data?.event_id ||
+      payload.data?.email_id ||
+      null;
+
+    const leadExternalId =
+      payload.lead_id ||
+      payload.lead?.id ||
+      payload.data?.lead_id ||
+      null;
+
+    const email =
+      payload.lead_email ||
+      payload.email ||
+      payload.lead?.email ||
+      payload.data?.lead_email ||
+      payload.data?.email ||
+      null;
 
     const mappedType = mapInstantlyEventToCampaignEventType(eventType, payload);
 
     if (!mappedType) {
-      return res.status(200).json({ ok: true, message: "unmapped event, ignored" });
+      return res.status(200).json({
+        ok: true,
+        message: "unmapped event, ignored",
+      });
     }
 
-    // find lead by Instantly id first, then by email
-    let lead = null;
-    if (leadExternalId) {
-      lead = await prisma.lead.findFirst({ where: { instantlyId: String(leadExternalId) } });
+    // Prevent duplicate webhook processing
+    if (externalId) {
+      const existing = await prisma.campaignEvent.findFirst({
+        where: {
+          source: "instantly",
+          externalId: String(externalId),
+        },
+      });
+
+      if (existing) {
+        return res.status(200).json({
+          ok: true,
+          message: "event already processed",
+        });
+      }
     }
+
+    // Find lead
+    let lead = null;
+
+    if (leadExternalId) {
+      lead = await prisma.lead.findFirst({
+        where: {
+          instantlyId: String(leadExternalId),
+        },
+      });
+    }
+
     if (!lead && email) {
-      lead = await prisma.lead.findFirst({ where: { email: String(email) } });
+      lead = await prisma.lead.findFirst({
+        where: {
+          email: {
+            equals: String(email),
+            mode: "insensitive",
+          },
+        },
+      });
     }
 
     if (!lead) {
-      // We only persist events we can associate with a Lead in our DB
-      return res.status(200).json({ ok: true, message: "no matching lead" });
+      return res.status(200).json({
+        ok: true,
+        message: "no matching lead",
+      });
     }
 
-    // Prefer an existing enrollment's campaignId, otherwise ensure a placeholder campaign exists
+    // Find campaign
     let campaignId: string | null = null;
-    const enrollment = await prisma.campaignEnrollment.findFirst({ where: { leadId: lead.id } });
-    if (enrollment) campaignId = enrollment.campaignId;
+
+    const enrollment = await prisma.campaignEnrollment.findFirst({
+      where: {
+        leadId: lead.id,
+      },
+    });
+
+    if (enrollment) {
+      campaignId = enrollment.campaignId;
+    }
 
     if (!campaignId) {
-      let campaign = await prisma.campaign.findFirst({ where: { name: "Instantly (webhook)" } });
+      let campaign = await prisma.campaign.findFirst({
+        where: {
+          name: "Instantly (webhook)",
+        },
+      });
+
       if (!campaign) {
-        campaign = await prisma.campaign.create({ data: { name: "Instantly (webhook)", status: "ACTIVE" } as any });
+        campaign = await prisma.campaign.create({
+          data: {
+            name: "Instantly (webhook)",
+            status: "ACTIVE",
+          } as any,
+        });
       }
+
       campaignId = campaign.id;
     }
 
-    const occurredAt = payload.timestamp ? new Date(payload.timestamp) : new Date();
+    const occurredAt = payload.timestamp
+      ? new Date(payload.timestamp)
+      : new Date();
 
     await prisma.campaignEvent.create({
       data: {
@@ -75,15 +160,30 @@ router.post("/webhook", async (req, res) => {
       },
     });
 
-    // Optionally update lead status for replies
-    if (mappedType === "POSITIVE_REPLY" || mappedType === "NEGATIVE_REPLY") {
-      await prisma.lead.update({ where: { id: lead.id }, data: { status: "REPLIED" } });
+    if (
+      mappedType === "POSITIVE_REPLY" ||
+      mappedType === "NEGATIVE_REPLY"
+    ) {
+      await prisma.lead.update({
+        where: {
+          id: lead.id,
+        },
+        data: {
+          status: "REPLIED",
+        },
+      });
     }
 
-    res.json({ ok: true });
+    return res.json({
+      ok: true,
+    });
+
   } catch (error: any) {
-    console.error("Instantly webhook error:", error?.message || error);
-    res.status(500).json({ error: error?.message || String(error) });
+    console.error("Instantly webhook error:", error);
+
+    return res.status(500).json({
+      error: error?.message || String(error),
+    });
   }
 });
 
