@@ -25,8 +25,8 @@ router.post("/webhook", async (req, res) => {
     const expectedSecret = process.env.INSTANTLY_WEBHOOK_SECRET;
 
     console.log({
-      suppliedSecret: req.header("x-instantly-webhook-secret"),
-      expectedSecret: process.env.INSTANTLY_WEBHOOK_SECRET,
+      suppliedSecret,
+      expectedSecret,
     });
 
     if (!expectedSecret || suppliedSecret !== expectedSecret) {
