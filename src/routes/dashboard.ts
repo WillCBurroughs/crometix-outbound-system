@@ -9,6 +9,26 @@ const DISQUALIFIED_STATUSES = [
   "COMPARISON_ERROR",
 ];
 
+async function countDistinctLeadsForEvent(type: string) {
+  const events = await prisma.campaignEvent.findMany({
+    where: {
+      type: type as any,
+    },
+    distinct: ["leadId"],
+    select: {
+      leadId: true,
+    },
+  });
+
+  return events.length;
+}
+
+function calculateRate(numerator: number, denominator: number) {
+  if (denominator === 0) return 0;
+
+  return Number(((numerator / denominator) * 100).toFixed(1));
+}
+
 router.get("/metrics", async (_req, res) => {
   try {
     const leadImportTotals = await prisma.leadImportLog.aggregate({
@@ -29,9 +49,14 @@ router.get("/metrics", async (_req, res) => {
       qualifiedLeads,
       reportsGenerated,
       sentToInstantly,
+
       emailsSent,
-      reportsViewed,
+      emailsDelivered,
+      emailsOpened,
+      linksClicked,
       positiveResponses,
+      negativeResponses,
+
       demosBooked,
       salesClosed,
     ] = await Promise.all([
@@ -53,51 +78,55 @@ router.get("/metrics", async (_req, res) => {
         },
       }),
 
+      // More reliable than checking only the lead's current status.
+      // A lead may progress beyond INSTANTLY_ADDED later.
       prisma.lead.count({
         where: {
-          status: "INSTANTLY_ADDED",
+          instantlyId: {
+            not: null,
+          },
         },
       }),
 
-      prisma.campaignEvent.count({
-        where: {
-          type: "EMAIL_SENT",
-        },
-      }),
-
-      prisma.campaignEvent.count({
-        where: {
-          type: "LINK_CLICKED",
-        },
-      }),
-
-      prisma.campaignEvent.count({
-        where: {
-          type: "POSITIVE_REPLY",
-        },
-      }),
-
-      prisma.campaignEvent.count({
-        where: {
-          type: "MEETING_BOOKED",
-        },
-      }),
-
-      prisma.campaignEvent.count({
-        where: {
-          type: "CLIENT_WON",
-        },
-      }),
+      countDistinctLeadsForEvent("EMAIL_SENT"),
+      countDistinctLeadsForEvent("EMAIL_DELIVERED"),
+      countDistinctLeadsForEvent("EMAIL_OPENED"),
+      countDistinctLeadsForEvent("LINK_CLICKED"),
+      countDistinctLeadsForEvent("POSITIVE_REPLY"),
+      countDistinctLeadsForEvent("NEGATIVE_REPLY"),
+      countDistinctLeadsForEvent("MEETING_BOOKED"),
+      countDistinctLeadsForEvent("CLIENT_WON"),
     ]);
 
+    const totalResponses = positiveResponses + negativeResponses;
+
+    const deliveryRate = calculateRate(emailsDelivered, emailsSent);
+    const openRate = calculateRate(emailsOpened, emailsSent);
+    const clickRate = calculateRate(linksClicked, emailsSent);
+    const replyRate = calculateRate(totalResponses, emailsSent);
+    const positiveReplyRate = calculateRate(
+      positiveResponses,
+      emailsSent,
+    );
+    const demoRate = calculateRate(demosBooked, emailsSent);
+    const closeRate = calculateRate(salesClosed, emailsSent);
+
     const stages = [
-      { key: "leadsPulled", label: "Leads Pulled", value: leadsPulled },
+      {
+        key: "leadsPulled",
+        label: "Leads Pulled",
+        value: leadsPulled,
+      },
       {
         key: "verifiedEmails",
         label: "Verified Emails",
         value: verifiedEmails,
       },
-      { key: "leadsImported", label: "Leads Imported", value: leadsImported },
+      {
+        key: "leadsImported",
+        label: "Leads Imported",
+        value: leadsImported,
+      },
       {
         key: "qualifiedLeads",
         label: "Qualified Leads",
@@ -113,18 +142,49 @@ router.get("/metrics", async (_req, res) => {
         label: "Sent to Instantly",
         value: sentToInstantly,
       },
-      { key: "emailsSent", label: "Emails Sent", value: emailsSent },
-      { key: "reportsViewed", label: "Reports Viewed", value: reportsViewed },
+      {
+        key: "emailsSent",
+        label: "Emails Sent",
+        value: emailsSent,
+      },
+      {
+        key: "emailsDelivered",
+        label: "Emails Delivered",
+        value: emailsDelivered,
+      },
+      {
+        key: "emailsOpened",
+        label: "Emails Opened",
+        value: emailsOpened,
+      },
+      {
+        key: "linksClicked",
+        label: "Links Clicked",
+        value: linksClicked,
+      },
+      {
+        key: "totalResponses",
+        label: "Total Responses",
+        value: totalResponses,
+      },
       {
         key: "positiveResponses",
         label: "Positive Responses",
         value: positiveResponses,
       },
-      { key: "demosBooked", label: "Demos Booked", value: demosBooked },
-      { key: "salesClosed", label: "Sales Closed", value: salesClosed },
+      {
+        key: "demosBooked",
+        label: "Demos Booked",
+        value: demosBooked,
+      },
+      {
+        key: "salesClosed",
+        label: "Sales Closed",
+        value: salesClosed,
+      },
     ];
 
-    res.json({
+    return res.json({
       funnel: {
         leadsPulled,
         verifiedEmails,
@@ -132,17 +192,37 @@ router.get("/metrics", async (_req, res) => {
         qualifiedLeads,
         reportsGenerated,
         sentToInstantly,
+
         emailsSent,
-        reportsViewed,
+        emailsDelivered,
+        emailsOpened,
+        linksClicked,
+
+        totalResponses,
         positiveResponses,
+        negativeResponses,
+
         demosBooked,
         salesClosed,
       },
+
+      rates: {
+        deliveryRate,
+        openRate,
+        clickRate,
+        replyRate,
+        positiveReplyRate,
+        demoRate,
+        closeRate,
+      },
+
       stages,
     });
   } catch (error: any) {
-    res.status(500).json({
-      error: error.message,
+    console.error("Dashboard metrics error:", error);
+
+    return res.status(500).json({
+      error: error?.message || String(error),
     });
   }
 });
